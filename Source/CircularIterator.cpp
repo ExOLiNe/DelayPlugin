@@ -2,53 +2,59 @@
   ==============================================================================
 
     CircularIterator.cpp
-    Created: 1 Jan 2023 9:15:58am
+    Created: 1 Jan 2023 12:34:40pm
     Author:  Aleksandr
 
   ==============================================================================
 */
 
 #include "CircularIterator.h"
+#include <cstdlib>
 
-
-SampleIterator::SampleIterator(sSize* endPointer, int endSize, sSize* beginPointer, int beginSize, int pos) :
-        endPointer(endPointer), endSize(endSize), beginPointer(beginPointer), beginSize(beginSize), pos(pos)
+CircularIterator::CircularIterator(float* ptr, int size, int pos) : ptr(ptr), size(size)
 {
+    setPos(pos);
 }
-sSize SampleIterator::operator*() const
+
+CircularIterator::~CircularIterator()
 {
-    if (isInTheEnd())
+
+}
+
+int CircularIterator::getPos()
+{
+    return this->pos;
+}
+
+void CircularIterator::operator+=(int steps)
+{
+    setPos(pos + steps);
+}
+
+int CircularIterator::operator-(CircularIterator& another)
+{
+    return this->pos - another.getValue();
+}
+
+void CircularIterator::setPos(int newPos)
+{
+    newPos = newPos % size;
+    if (newPos < 0)
     {
-        return *(endPointer + pos);
+        pos = (size + newPos) % size;
     }
-    else
+    else 
     {
-        if (pos - endSize > beginSize)
-        {
-            throw exception("out of bound");
-        }
-
-        return *(beginPointer + pos - endSize);
+        pos = newPos % size;
     }
 }
-SampleIterator* SampleIterator::operator->()
+
+void CircularIterator::operator=(int numb)
 {
-    return this;
+    setPos(numb);
 }
-SampleIterator* SampleIterator::operator++()
+
+int CircularIterator::getValue()
 {
-    pos++;
-    return this;
-}
-SampleIterator SampleIterator::begin()
-{
-    return SampleIterator(this->endPointer, this->endSize, this->beginPointer, this->beginSize, 0);
-}
-SampleIterator SampleIterator::end()
-{
-    return SampleIterator(this->endPointer, this->endSize, this->beginPointer, this->beginSize, this->endSize + this->beginSize + 1);
-}
-bool SampleIterator::isInTheEnd() const
-{
-    return pos <= endSize - 1;
+    return pos;
 }

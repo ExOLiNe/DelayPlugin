@@ -19,7 +19,8 @@ AudioFifoTestAudioProcessor::AudioFifoTestAudioProcessor()
                       #endif
                        .withOutput ("Output", juce::AudioChannelSet::stereo(), true)
                      #endif
-                       )
+                       ), chains(vector<Chain>(getNumInputChannels()))
+                        
 #endif
 {
 }
@@ -36,29 +37,20 @@ const juce::String AudioFifoTestAudioProcessor::getName() const
 
 bool AudioFifoTestAudioProcessor::acceptsMidi() const
 {
-   #if JucePlugin_WantsMidiInput
+#if JucePlugin_WantsMidiInput
     return true;
-   #else
+#else
     return false;
-   #endif
+#endif
 }
 
 bool AudioFifoTestAudioProcessor::producesMidi() const
 {
-   #if JucePlugin_ProducesMidiOutput
+#if JucePlugin_ProducesMidiOutput
     return true;
-   #else
+#else
     return false;
-   #endif
-}
-
-bool AudioFifoTestAudioProcessor::isMidiEffect() const
-{
-   #if JucePlugin_IsMidiEffect
-    return true;
-   #else
-    return false;
-   #endif
+#endif
 }
 
 double AudioFifoTestAudioProcessor::getTailLengthSeconds() const
@@ -93,24 +85,25 @@ void AudioFifoTestAudioProcessor::changeProgramName (int index, const juce::Stri
 //==============================================================================
 void AudioFifoTestAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
-    // Use this method as the place to do any pre-playback
-    // initialisation that you need..
+    
+    dsp::ProcessSpec spec;
+    spec.sampleRate = sampleRate;
+    spec.maximumBlockSize = samplesPerBlock;
+    spec.numChannels = getTotalNumOutputChannels();
+
     delaySamples = (float)delayMs / 1000 * getSampleRate();
+    auto maxSampleDelayMs = MAX_SAMPLE_DELAY_MS / 1000 * getSampleRate();
+    auto some = maxSampleDelayMs * MAX_VOICES + (1 << 12);
 
-    for (int voice = 0; voice < feedback; voice++)
+    for (int channel = 0; channel < getNumInputChannels(); channel++)
     {
-        vector<queue<float>> q;
-        q.push_back(queue<float>());
-        q.push_back(queue<float>());
-        delayBuffers.push_back(q);
+        chains[channel].prepare(spec);
+        chains[channel].get<lowPass>().coefficients = IIR::Coefficients<float>::makeLowPass(sampleRate, 4000.0f);
+        chains[channel].get<highPass>().coefficients = IIR::Coefficients<float>::makeHighPass(sampleRate, 800.0f);
 
-        for (int j = 0; j < getNumInputChannels(); j++)
-        {
-            for (int i = 0; i < delaySamples * (voice + 1); i++)
-            {
-                pushSample(0, j, voice);
-            }
-        }
+        auto buffer = DelayBuffer(maxSampleDelayMs, delaySamples, MAX_VOICES);
+        buffer.fillSamples(0, delaySamples);
+        delayBuffers.push_back(buffer);
     }
 }
 
@@ -148,33 +141,102 @@ bool AudioFifoTestAudioProcessor::isBusesLayoutSupported (const BusesLayout& lay
 
 void AudioFifoTestAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
 {
-    for (int j = 0; j < buffer.getNumChannels(); j++)
-    {
-        auto* channelData = buffer.getWritePointer(j);
+    postProcessBuffer.setSize(buffer.getNumChannels(), buffer.getNumSamples());
+    postProcessBuffer.clear();
 
-        for (auto i = 0; i < buffer.getNumSamples(); ++i)
+
+    if (mode == Mode::PING_PONG)
+    {
+        delayBuffers[0].setStaticDelay(delaySamples / 2);
+    }
+    else
+    {
+        delayBuffers[0].setStaticDelay(0);
+    }
+
+    //Write real-time signal to delayed buffer and sum all voices
+    for (int channel = 0; channel < buffer.getNumChannels(); channel++)
+    {
+        auto* channelData = buffer.getWritePointer(channel);
+        auto* postProcessChannelData = postProcessBuffer.getWritePointer(channel);
+
+        delayBuffers[channel].pushSamples(channelData, buffer.getNumSamples());
+        
+        auto voiceIterators = vector<SlicedArray>();
+
+        for (auto voice = 0; voice < voices; voice++)
         {
-            for (auto repeat = 0; repeat < feedback; repeat++)
-            {
-                pushSample(channelData[i], j, repeat);
-            }
+            voiceIterators.push_back(delayBuffers[channel].readSamples(buffer.getNumSamples(), voice));
         }
 
         for (auto i = 0; i < buffer.getNumSamples(); ++i)
         {
-            channelData[i] = channelData[i] * dryGain;
-            for (auto repeat = 0; repeat < feedback; repeat++)
+            for (auto voice = 0; voice < voices; voice++)
             {
-                channelData[i] += readSample(j, repeat) * wetGain * pow(fadingFactor, repeat);
+                postProcessChannelData[i] += 0.05f * voiceIterators[voice][i] * wetGain * pow(fadingFactor, voice);
             }
         }
     }
+
+    //Delayed voices post processing
+    dsp::AudioBlock<float> block(postProcessBuffer);
+    for (int channel = 0; channel < postProcessBuffer.getNumChannels(); ++channel)
+    {
+        auto channelBlock = block.getSingleChannelBlock(channel);
+        chains[channel].process(dsp::ProcessContextReplacing<float>(channelBlock));
+    }
+
+    //Wrap read pointers per channel to one entity for choosing between stereo and mono
+    auto postProcessedChannels = vector<const float*>(postProcessBuffer.getNumChannels());
+    for (int channel = 0; channel < postProcessBuffer.getNumChannels(); ++channel)
+    {
+        postProcessedChannels[channel] = postProcessBuffer.getReadPointer(channel);
+    }
+    auto postProcessedChannelsPointers = ChannelMixingWritePointer(
+        postProcessedChannels, mode == Mode::MONO);
+
+    //Mixing dry and wet signals together
+    for (int channel = 0; channel < buffer.getNumChannels(); channel++)
+    {
+        auto* channelData = buffer.getWritePointer(channel);
+        for (auto i = 0; i < buffer.getNumSamples(); ++i)
+        {
+            channelData[i] = channelData[i] * dryGain;
+            for (auto voice = 0; voice < voices; voice++)
+            {
+                channelData[i] += postProcessedChannelsPointers.get(channel, i);
+            }
+        }
+    }
+
+    //Update chain params from editor
+    updateChains();
+}
+
+void AudioFifoTestAudioProcessor::updateChains()
+{
+    for (int channel = 0; channel < chains.size(); ++channel)
+    {
+        chains[channel].get<lowPass>().coefficients = IIR::Coefficients<float>::makeLowPass(getSampleRate(),
+            lowpassFrequency);
+        chains[channel].get<highPass>().coefficients = IIR::Coefficients<float>::makeHighPass(getSampleRate(),
+            highpassFrequency);
+    }
+}
+
+void AudioFifoTestAudioProcessor::setMode(Mode mode)
+{
+    this->mode = mode;
+}
+Mode AudioFifoTestAudioProcessor::getMode()
+{
+    return this->mode;
 }
 
 void AudioFifoTestAudioProcessor::setDryWet(int percentage)
 {
-    dryGain = (float)percentage / 100 * 0.9;
-    wetGain = (float)(100 - percentage) / 100 * 0.9;
+    wetGain = (float)percentage / 100 * 0.9;
+    dryGain = (float)(100 - percentage) / 100 * 0.9;
 }
 
 int AudioFifoTestAudioProcessor::getDryWet()
@@ -184,7 +246,11 @@ int AudioFifoTestAudioProcessor::getDryWet()
 
 void AudioFifoTestAudioProcessor::setDelayMs(int ms)
 {
-    delaySamples = (float)delayMs / 1000 * getSampleRate();
+    delaySamples = (float)ms * getSampleRate() / 1000;
+    for (int channel = 0; channel < getNumInputChannels(); ++channel)
+    {
+        delayBuffers[channel].setDelaySamples(delaySamples);
+    }
 }
 
 int AudioFifoTestAudioProcessor::getDelayMs()
@@ -192,26 +258,34 @@ int AudioFifoTestAudioProcessor::getDelayMs()
     return delayMs;
 }
 
-void AudioFifoTestAudioProcessor::setFeedback(int ms)
+void AudioFifoTestAudioProcessor::setFeedback(float ms)
 {
-    feedback = ms;
+    fadingFactor = ms;
 }
-int AudioFifoTestAudioProcessor::getFeedback()
+float AudioFifoTestAudioProcessor::getFeedback()
 {
-    return feedback;
-}
-
-void AudioFifoTestAudioProcessor::pushSample(float sample, int channel, int repeatVoice)
-{
-    delayBuffers[repeatVoice][channel].push(sample);
+    return fadingFactor;
 }
 
-float AudioFifoTestAudioProcessor::readSample(int channel, int repeatVoice)
+void AudioFifoTestAudioProcessor::setLowpassFrequency(int freq)
 {
-    auto sample = delayBuffers[repeatVoice][channel].front();
-    delayBuffers[repeatVoice][channel].pop();
-    return sample;
+    this->lowpassFrequency = freq;
 }
+int AudioFifoTestAudioProcessor::getLowpassFrequency()
+{
+    return this->lowpassFrequency;
+}
+
+void AudioFifoTestAudioProcessor::setHighpassFrequency(int freq)
+{
+    this->highpassFrequency = freq;
+}
+
+int AudioFifoTestAudioProcessor::getHighpassFrequency()
+{
+    return this->highpassFrequency;
+}
+
 
 //==============================================================================
 bool AudioFifoTestAudioProcessor::hasEditor() const

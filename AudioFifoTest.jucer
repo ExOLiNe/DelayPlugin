@@ -4,6 +4,10 @@
               addUsingNamespaceToJuceHeader="0" displaySplashScreen="1" jucerFormatVersion="1">
   <MAINGROUP id="Hss3D6" name="AudioFifoTest">
     <GROUP id="{2FCE40FA-DF49-6AD4-4088-2E27F63B914F}" name="Source">
+      <FILE id="yc3yG4" name="CircularIterator.cpp" compile="1" resource="0"
+            file="Source/CircularIterator.cpp"/>
+      <FILE id="OvdjqS" name="CircularIterator.h" compile="0" resource="0"
+            file="Source/CircularIterator.h"/>
       <FILE id="BnaiLi" name="PluginProcessor.cpp" compile="1" resource="0"
             file="Source/PluginProcessor.cpp"/>
       <FILE id="NNmIxm" name="PluginProcessor.h" compile="0" resource="0"
@@ -13,10 +17,12 @@
       <FILE id="RhQvcs" name="PluginEditor.h" compile="0" resource="0" file="Source/PluginEditor.h"/>
       <FILE id="rag7eu" name="DelayBuffer.cpp" compile="1" resource="0" file="Source/DelayBuffer.cpp"/>
       <FILE id="b4yoqQ" name="DelayBuffer.h" compile="0" resource="0" file="Source/DelayBuffer.h"/>
-      <FILE id="NktTal" name="CircularIterator.cpp" compile="1" resource="0"
-            file="Source/CircularIterator.cpp"/>
-      <FILE id="c7nU80" name="CircularIterator.h" compile="0" resource="0"
-            file="Source/CircularIterator.h"/>
+      <FILE id="NktTal" name="SlicedArray.cpp" compile="1" resource="0" file="Source/SlicedArray.cpp"/>
+      <FILE id="c7nU80" name="SlicedArray.h" compile="0" resource="0" file="Source/SlicedArray.h"/>
+      <FILE id="ARHEc2" name="ChannelMixingWritePointer.cpp" compile="1"
+            resource="0" file="Source/ChannelMixingWritePointer.cpp"/>
+      <FILE id="JAvQhV" name="ChannelMixingWritePointer.h" compile="0" resource="0"
+            file="Source/ChannelMixingWritePointer.h"/>
     </GROUP>
   </MAINGROUP>
   <JUCEOPTIONS JUCE_STRICT_REFCOUNTEDPOINTER="1" JUCE_VST3_CAN_REPLACE_VST2="0"/>

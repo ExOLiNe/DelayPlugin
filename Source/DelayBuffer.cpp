@@ -11,48 +11,61 @@
 #include "DelayBuffer.h"
 #include <iterator>
 #include <algorithm>
+#include <format>
 
-DelayBuffer::DelayBuffer(int size)
+#define RESERVED (1 << 12)
+
+DelayBuffer::DelayBuffer(int maxSampleDelay, int sampleDelay, int voices) :
+    bufSize(maxSampleDelay * voices + RESERVED),
+    sampleDelay(sampleDelay),
+    buffer(new float[bufSize]),
+    currWritePos(CircularIterator(buffer, bufSize, 0))
 {
-    bufSize = size;
-    buffer = new float[size];
+    for (int voice = 0; voice < voices; voice++)
+    {
+        readPositions.push_back(CircularIterator(buffer, bufSize, (voice + 1) * sampleDelay));
+    }
 }
 
 void DelayBuffer::pushSamples(float* samples, int numSamples)
 {
-    if (currWritePos + numSamples <= bufSize)
+    auto pos = currWritePos.getValue();
+    if (pos + numSamples <= bufSize)
     {
-        memcpy(&buffer + currWritePos, samples, numSamples);
-        currWritePos += numSamples;
+        copy(samples, samples + numSamples, buffer + pos);
     }
     else
     {
-        auto toEnd = bufSize - currWritePos;
-        memcpy(&buffer + currWritePos, samples, toEnd);
+        Logger::getCurrentLogger()->writeToLog("buffer push exception");
+        auto toEnd = bufSize - pos;
+        copy(samples, samples + toEnd, buffer + pos);
 
-        memcpy(&buffer, samples + toEnd, numSamples);
-        currWritePos = numSamples - toEnd;
+        copy(samples + toEnd, samples + numSamples - toEnd, buffer);
+    }
+    currWritePos += numSamples;
+}
+void DelayBuffer::fillSamples(float value, int numSamples)
+{
+    memset(buffer, value, bufSize * sizeof(float));
+    currWritePos = numSamples;
+}
+SlicedArray DelayBuffer::readSamples(int numSamples, int voice)
+{
+    auto pos = readPositions[voice].getValue();
+    readPositions[voice] += numSamples;
+    return SlicedArray(buffer, pos, bufSize);
+}
+void DelayBuffer::setDelaySamples(int newSampleDelay)
+{
+    this->sampleDelay = newSampleDelay;
+    for (int i = 0; i < readPositions.size(); i++)
+    {
+        readPositions[i].setPos(currWritePos.getValue() - newSampleDelay * (i + 1) - staticSampleDelay);
     }
 }
-SampleIterator DelayBuffer::readSamples(int numSamples)
+
+void DelayBuffer::setStaticDelay(int delay)
 {
-    if (currReadPos + numSamples <= bufSize)
-    {
-        currReadPos += numSamples;
-        return SampleIterator(buffer + currReadPos, bufSize - currReadPos, nullptr, 0, 0);
-    }
-    else
-    {
-        auto toEnd = bufSize - currReadPos;
-        return SampleIterator(buffer + currReadPos, toEnd, buffer, numSamples - toEnd);
-    }
-}
-void DelayBuffer::setDelaySamples(int samples)
-{
-    for (int i = 0; i < samples; i++)
-    {
-        memset(buffer, 0, sizeof(buffer));
-        currReadPos = 0;
-        currWritePos = samples;
-    }
+    staticSampleDelay = delay;
+    setDelaySamples(sampleDelay);
 }

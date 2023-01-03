@@ -10,6 +10,7 @@
 
 #include <JuceHeader.h>
 #include "PluginProcessor.h"
+#include "ChannelMixingWritePointer.h"
 
 using namespace juce;
 
@@ -17,7 +18,7 @@ using namespace juce;
 /**
 */
 class AudioFifoTestAudioProcessorEditor  : public juce::AudioProcessorEditor,
-    public Slider::Listener
+    public Slider::Listener, public ComboBox::Listener
 {
 public:
     AudioFifoTestAudioProcessorEditor (AudioFifoTestAudioProcessor&);
@@ -27,7 +28,7 @@ public:
     void paint (juce::Graphics&) override;
     void resized() override;
     void sliderValueChanged(Slider* slider) override;
-
+    void comboBoxChanged(ComboBox* comboBoxThatHasChanged) override;
 private:
 
     // This reference is provided as a quick way for your editor to
@@ -37,6 +38,9 @@ private:
     Slider dryWetSlider;
     Slider delaySlider;
     Slider feedbackSlider;
+    Slider lowpassSlider;
+    Slider highpassSlider;
+    ComboBox modeBox;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (AudioFifoTestAudioProcessorEditor)
 };

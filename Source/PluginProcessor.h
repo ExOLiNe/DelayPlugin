@@ -9,9 +9,30 @@
 #pragma once
 
 #include <JuceHeader.h>
-#include <fstream>
+#include "DelayBuffer.h"
 
 using namespace std;
+using namespace juce;
+using namespace juce::dsp;
+
+#define MAX_SAMPLE_DELAY_MS 1000
+#define MAX_VOICES 16
+
+using Filter = IIR::Filter<float>;
+using Chain = ProcessorChain<Filter, Filter>;
+
+enum Mode
+{
+    STEREO,
+    MONO,
+    PING_PONG
+};
+
+enum
+{
+    lowPass,
+    highPass
+};
 
 //==============================================================================
 /**
@@ -34,6 +55,7 @@ public:
     bool isBusesLayoutSupported (const BusesLayout& layouts) const override;
    #endif
 
+
     void processBlock (juce::AudioBuffer<float>&, juce::MidiBuffer&) override;
 
     //==============================================================================
@@ -43,12 +65,10 @@ public:
     //==============================================================================
     const juce::String getName() const override;
 
-    bool acceptsMidi() const override;
-    bool producesMidi() const override;
-    bool isMidiEffect() const override;
-    double getTailLengthSeconds() const override;
-
     //==============================================================================
+    bool acceptsMidi() const;
+    bool producesMidi() const;
+    double getTailLengthSeconds() const;
     int getNumPrograms() override;
     int getCurrentProgram() override;
     void setCurrentProgram (int index) override;
@@ -65,24 +85,38 @@ public:
     void setDelayMs(int ms);
     int getDelayMs();
 
-    void setFeedback(int ms);
-    int getFeedback();
+    void setFeedback(float ms);
+    float getFeedback();
+
+    void setLowpassFrequency(int freq);
+    int getLowpassFrequency();
+
+    void setHighpassFrequency(int freq);
+    int getHighpassFrequency();
+
+    void setMode(Mode mode);
+    Mode getMode();
 
 private:
-    int dryWet = 0;
-    int delayMs = 20;
-    int feedback = 1;
-    //static constexpr auto fftOrder = 10;
-    //static constexpr auto fftSize = 1 << fftOrder;
-    float delaySamples = 0;
+    //UI params
+    int dryWet = 90;
+    int delayMs = 200;
     float fadingFactor = 0.8;
-    float dryGain = 0.9;
-    float wetGain = 0;
+    Mode mode;
+    //=============================================================================
 
-    vector<vector<queue<float>>> delayBuffers;
-    void pushSample(float sample, int channel, int repeatVoice);
-    float readSample(int channel, int repeatVoice);
-    juce::Logger* logger = juce::Logger::getCurrentLogger();
+    int voices = MAX_VOICES;
+    float delaySamples = 0;
+    float dryGain = 0.8;
+    float wetGain = 0.4;
+
+    void updateChains();
+
+    vector<DelayBuffer> delayBuffers;
+    float lowpassFrequency = 1000;
+    float highpassFrequency = 600;
+    AudioBuffer<float> postProcessBuffer;
+    vector<Chain> chains;
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (AudioFifoTestAudioProcessor)
 };
