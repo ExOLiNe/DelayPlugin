@@ -10,16 +10,17 @@
 
 #include <JuceHeader.h>
 #include "DelayBuffer.h"
+#include "Compressor.h"
 
 using namespace std;
 using namespace juce;
-using namespace juce::dsp;
+//using namespace juce::dsp;
 
 #define MAX_SAMPLE_DELAY_MS 1000
 #define MAX_VOICES 16
 
-using Filter = IIR::Filter<float>;
-using Chain = ProcessorChain<Filter, Filter>;
+using Filter = dsp::IIR::Filter<float>;
+using Chain = dsp::ProcessorChain<Filter, Filter, dsp::Compressor<float>>;
 
 enum Mode
 {
@@ -31,7 +32,8 @@ enum Mode
 enum
 {
     lowPass,
-    highPass
+    highPass,
+    compressor
 };
 
 //==============================================================================
@@ -97,26 +99,41 @@ public:
     void setMode(Mode mode);
     Mode getMode();
 
+    void setDuration(int divider);
+    void setBpmTied(bool tied);
+
 private:
     //UI params
     int dryWet = 90;
     int delayMs = 200;
     float fadingFactor = 0.8;
     Mode mode;
+    int durationDivider;
+    bool tiedToBpm = false;
     //=============================================================================
 
+    int compressionRatio = 2.5;
+    float compressionThreshold = 0.005;
+    float compressionAttack = 10;
+    float compressionRelease = 200;
     int voices = MAX_VOICES;
     float delaySamples = 0;
     float dryGain = 0.8;
     float wetGain = 0.4;
 
+    double bpm = 0;
+
     void updateChains();
+    void setDelaySamples(int delaySamples);
 
     vector<DelayBuffer> delayBuffers;
     float lowpassFrequency = 1000;
     float highpassFrequency = 600;
     AudioBuffer<float> postProcessBuffer;
     vector<Chain> chains;
+
+
+    AudioProcessorValueTreeState treeState;
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (AudioFifoTestAudioProcessor)
 };

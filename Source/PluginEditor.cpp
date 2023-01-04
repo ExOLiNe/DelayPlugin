@@ -13,6 +13,16 @@
 AudioFifoTestAudioProcessorEditor::AudioFifoTestAudioProcessorEditor (AudioFifoTestAudioProcessor& p)
     : AudioProcessorEditor (&p), audioProcessor (p)
 {
+
+    bpmMappings.push_back(32);
+    bpmMappings.push_back(24);
+    bpmMappings.push_back(16);
+    bpmMappings.push_back(12);
+    bpmMappings.push_back(8);
+    bpmMappings.push_back(6);
+    bpmMappings.push_back(4);
+    bpmMappings.push_back(3);
+    bpmMappings.push_back(2);
     // Make sure that before the constructor has finished, you've set the
     // editor's size to whatever you need it to be.
     setSize (600, 400);
@@ -58,6 +68,9 @@ AudioFifoTestAudioProcessorEditor::AudioFifoTestAudioProcessorEditor (AudioFifoT
     highpassSlider.setValue(audioProcessor.getHighpassFrequency());
     highpassSlider.addListener(this);
     addAndMakeVisible(highpassSlider);
+
+    tiedToBpmButton.addListener(this);
+    addAndMakeVisible(tiedToBpmButton);
 }
 
 AudioFifoTestAudioProcessorEditor::~AudioFifoTestAudioProcessorEditor()
@@ -84,7 +97,14 @@ void AudioFifoTestAudioProcessorEditor::sliderValueChanged(Slider* slider)
 {
     if (slider == &delaySlider) 
     {
-        audioProcessor.setDelayMs(slider->getValue());
+        if (delayTimeMode == DelayTimeMode::BPM)
+        {
+            audioProcessor.setDuration(bpmMappings[slider->getValue()]);
+        }
+        else
+        {
+            audioProcessor.setDelayMs(slider->getValue());
+        }
     }
     else if (slider == &feedbackSlider)
     {
@@ -104,6 +124,34 @@ void AudioFifoTestAudioProcessorEditor::sliderValueChanged(Slider* slider)
     }
 }
 
+void AudioFifoTestAudioProcessorEditor::setDelayTimeMode(DelayTimeMode mode)
+{
+    this->delayTimeMode = mode;
+}
+
+void AudioFifoTestAudioProcessorEditor::buttonStateChanged(Button* button)
+{
+    auto state = button->getToggleState();
+    if (state)
+    {
+        delaySlider.setTextValueSuffix("");
+        delaySlider.setRange(0, bpmMappings.size() - 1, 1.0f);
+        delayTimeMode = DelayTimeMode::BPM;
+        audioProcessor.setBpmTied(state);
+    }
+    else
+    {
+        delaySlider.setTextValueSuffix(" ms");
+        delaySlider.setRange(50, 1200, 1);
+        delayTimeMode = DelayTimeMode::MS;
+    }
+}
+
+void AudioFifoTestAudioProcessorEditor::buttonClicked(Button*)
+{
+
+}
+
 //==============================================================================
 void AudioFifoTestAudioProcessorEditor::paint (juce::Graphics& g)
 {
@@ -114,10 +162,18 @@ void AudioFifoTestAudioProcessorEditor::paint (juce::Graphics& g)
 
 void AudioFifoTestAudioProcessorEditor::resized()
 {
-    dryWetSlider.setBounds(getLocalBounds().removeFromBottom(getHeight() / 2).removeFromLeft(getWidth() / 3));
-    delaySlider.setBounds(getLocalBounds().removeFromTop(getHeight() / 2).removeFromLeft(getWidth() / 3));
-    feedbackSlider.setBounds(getLocalBounds().removeFromTop(getHeight() / 2).removeFromRight(getWidth() / 3));
-    modeBox.setBounds(getLocalBounds().removeFromBottom(getHeight() / 2).removeFromRight(getWidth() / 3));
-    lowpassSlider.setBounds(getLocalBounds().removeFromBottom(getHeight() / 2).removeFromLeft(getWidth() / 3 * 2).removeFromRight(getWidth() / 5 * 2));
-    highpassSlider.setBounds(getLocalBounds().removeFromTop(getHeight() / 2).removeFromLeft(getWidth() / 3 * 2).removeFromRight(getWidth() / 5 * 2));
+    dryWetSlider.setBounds(
+        getLocalBounds().removeFromBottom(getHeight() / 2).removeFromLeft(getWidth() / 3));
+    delaySlider.setBounds(
+        getLocalBounds().removeFromTop(getHeight() / 2).removeFromLeft(getWidth() / 3));
+    feedbackSlider.setBounds(
+        getLocalBounds().removeFromTop(getHeight() / 2).removeFromRight(getWidth() / 3));
+    modeBox.setBounds(
+        getLocalBounds().removeFromBottom(getHeight() / 2).removeFromRight(getWidth() / 3));
+    lowpassSlider.setBounds(
+        getLocalBounds().removeFromBottom(getHeight() / 2).removeFromLeft(getWidth() / 3 * 2).removeFromRight(getWidth() / 7 * 2));
+    highpassSlider.setBounds(
+        getLocalBounds().removeFromTop(getHeight() / 2).removeFromLeft(getWidth() / 3 * 2).removeFromRight(getWidth() / 5 * 2));
+    tiedToBpmButton.setBounds(
+        getLocalBounds().removeFromBottom(getHeight() / 3).removeFromRight(getWidth() / 3));
 }

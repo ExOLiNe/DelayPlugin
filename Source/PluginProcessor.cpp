@@ -20,9 +20,11 @@ AudioFifoTestAudioProcessor::AudioFifoTestAudioProcessor()
                        .withOutput ("Output", juce::AudioChannelSet::stereo(), true)
                      #endif
                        ), chains(vector<Chain>(getNumInputChannels()))
+                        , treeState(*this, nullptr)
                         
 #endif
 {
+    //treeState.createAndAddParameter();
 }
 
 AudioFifoTestAudioProcessor::~AudioFifoTestAudioProcessor()
@@ -95,11 +97,16 @@ void AudioFifoTestAudioProcessor::prepareToPlay (double sampleRate, int samplesP
     auto maxSampleDelayMs = MAX_SAMPLE_DELAY_MS / 1000 * getSampleRate();
     auto some = maxSampleDelayMs * MAX_VOICES + (1 << 12);
 
+
     for (int channel = 0; channel < getNumInputChannels(); channel++)
     {
         chains[channel].prepare(spec);
-        chains[channel].get<lowPass>().coefficients = IIR::Coefficients<float>::makeLowPass(sampleRate, 4000.0f);
-        chains[channel].get<highPass>().coefficients = IIR::Coefficients<float>::makeHighPass(sampleRate, 800.0f);
+        chains[channel].get<lowPass>().coefficients = dsp::IIR::Coefficients<float>::makeLowPass(sampleRate, 4000.0f);
+        chains[channel].get<highPass>().coefficients = dsp::IIR::Coefficients<float>::makeHighPass(sampleRate, 800.0f);
+        chains[channel].get<compressor>().setRatio(compressionRatio);
+        chains[channel].get<compressor>().setThreshold(compressionThreshold);
+        chains[channel].get<compressor>().setAttack(compressionAttack);
+        chains[channel].get<compressor>().setRelease(compressionRelease);
 
         auto buffer = DelayBuffer(maxSampleDelayMs, delaySamples, MAX_VOICES);
         buffer.fillSamples(0, delaySamples);
@@ -141,6 +148,12 @@ bool AudioFifoTestAudioProcessor::isBusesLayoutSupported (const BusesLayout& lay
 
 void AudioFifoTestAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
 {
+    auto bpm = (*getPlayHead()->getPosition()).getBpm();
+    if (bpm.hasValue())
+    {
+        this->bpm = *bpm;
+    }
+
     postProcessBuffer.setSize(buffer.getNumChannels(), buffer.getNumSamples());
     postProcessBuffer.clear();
 
@@ -217,9 +230,9 @@ void AudioFifoTestAudioProcessor::updateChains()
 {
     for (int channel = 0; channel < chains.size(); ++channel)
     {
-        chains[channel].get<lowPass>().coefficients = IIR::Coefficients<float>::makeLowPass(getSampleRate(),
+        chains[channel].get<lowPass>().coefficients = dsp::IIR::Coefficients<float>::makeLowPass(getSampleRate(),
             lowpassFrequency);
-        chains[channel].get<highPass>().coefficients = IIR::Coefficients<float>::makeHighPass(getSampleRate(),
+        chains[channel].get<highPass>().coefficients = dsp::IIR::Coefficients<float>::makeHighPass(getSampleRate(),
             highpassFrequency);
     }
 }
@@ -233,6 +246,11 @@ Mode AudioFifoTestAudioProcessor::getMode()
     return this->mode;
 }
 
+void AudioFifoTestAudioProcessor::setBpmTied(bool tied)
+{
+    this->tiedToBpm = tied;
+}
+
 void AudioFifoTestAudioProcessor::setDryWet(int percentage)
 {
     wetGain = (float)percentage / 100 * 0.9;
@@ -244,12 +262,25 @@ int AudioFifoTestAudioProcessor::getDryWet()
     return dryWet;
 }
 
-void AudioFifoTestAudioProcessor::setDelayMs(int ms)
+void AudioFifoTestAudioProcessor::setDelaySamples(int delaySamples)
 {
-    delaySamples = (float)ms * getSampleRate() / 1000;
     for (int channel = 0; channel < getNumInputChannels(); ++channel)
     {
         delayBuffers[channel].setDelaySamples(delaySamples);
+    }
+}
+
+void AudioFifoTestAudioProcessor::setDelayMs(int ms)
+{
+    setDelaySamples((float)ms * getSampleRate() / 1000);
+}
+
+void AudioFifoTestAudioProcessor::setDuration(int divider)
+{
+    this->durationDivider = divider;
+    if (bpm > 0)
+    {
+        setDelaySamples(getSampleRate() / (bpm / 4 / 60 * durationDivider));
     }
 }
 
