@@ -22,7 +22,8 @@ class DelayBuffer
 {
 public:
     DelayBuffer(int maxSampleDelay, int sampleDelay, int voices);
-    void pushSamples(float* samples, int numSamples);
+    ~DelayBuffer();
+    void pushSamples(const float& samples, int numSamples);
     void fillSamples(float value, int numSamples);
     SlicedArray readSamples(int numSamples, int voice);
     void setDelaySamples(int newSampleDelay);
@@ -31,7 +32,7 @@ private:
     const int bufSize;
     int sampleDelay;
     int staticSampleDelay = 0;
-    float* buffer;
+    vector<float> buffer;
     CircularIterator currWritePos;
     vector<CircularIterator> readPositions;
 };

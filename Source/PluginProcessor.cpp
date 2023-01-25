@@ -20,15 +20,22 @@ AudioFifoTestAudioProcessor::AudioFifoTestAudioProcessor()
                        .withOutput ("Output", juce::AudioChannelSet::stereo(), true)
                      #endif
                        ), chains(vector<Chain>(getNumInputChannels()))
-                        , treeState(*this, nullptr)
+    , treeState(*this, nullptr, "PARAMETERS", createParameterLayout())
                         
 #endif
 {
-    //treeState.createAndAddParameter();
 }
 
 AudioFifoTestAudioProcessor::~AudioFifoTestAudioProcessor()
 {
+}
+
+AudioProcessorValueTreeState::ParameterLayout AudioFifoTestAudioProcessor::createParameterLayout()
+{
+    vector<unique_ptr<RangedAudioParameter>> params;
+
+    params.emplace_back(make_unique<AudioParameterInt>(DRY_WET_ID, "drywet", 0.0f, 100.f, 30.0f));
+    return { params.begin(), params.end() };
 }
 
 //==============================================================================
@@ -87,6 +94,7 @@ void AudioFifoTestAudioProcessor::changeProgramName (int index, const juce::Stri
 //==============================================================================
 void AudioFifoTestAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
+    voiceIterators.resize(voices);
     
     dsp::ProcessSpec spec;
     spec.sampleRate = sampleRate;
@@ -110,7 +118,7 @@ void AudioFifoTestAudioProcessor::prepareToPlay (double sampleRate, int samplesP
 
         auto buffer = DelayBuffer(maxSampleDelayMs, delaySamples, MAX_VOICES);
         buffer.fillSamples(0, delaySamples);
-        delayBuffers.push_back(buffer);
+        delayBuffers.push_back(move(buffer));
     }
 }
 
@@ -167,19 +175,21 @@ void AudioFifoTestAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer
         delayBuffers[0].setStaticDelay(0);
     }
 
+    auto wetGain = (float) treeState.getRawParameterValue(DRY_WET_ID)->load() / 100;
+    auto dryGain = (float) (100 - treeState.getRawParameterValue(DRY_WET_ID)->load()) / 100;
+
     //Write real-time signal to delayed buffer and sum all voices
     for (int channel = 0; channel < buffer.getNumChannels(); channel++)
     {
         auto* channelData = buffer.getWritePointer(channel);
         auto* postProcessChannelData = postProcessBuffer.getWritePointer(channel);
 
-        delayBuffers[channel].pushSamples(channelData, buffer.getNumSamples());
-        
-        auto voiceIterators = vector<SlicedArray>();
+        delayBuffers[channel].pushSamples(*channelData, buffer.getNumSamples());
 
         for (auto voice = 0; voice < voices; voice++)
         {
-            voiceIterators.push_back(delayBuffers[channel].readSamples(buffer.getNumSamples(), voice));
+            //TODO - why is this shit copying??
+            voiceIterators[voice] = move(delayBuffers[channel].readSamples(buffer.getNumSamples(), voice));
         }
 
         for (auto i = 0; i < buffer.getNumSamples(); ++i)
@@ -251,7 +261,7 @@ void AudioFifoTestAudioProcessor::setBpmTied(bool tied)
     this->tiedToBpm = tied;
 }
 
-void AudioFifoTestAudioProcessor::setDryWet(int percentage)
+/*void AudioFifoTestAudioProcessor::setDryWet(int percentage)
 {
     wetGain = (float)percentage / 100 * 0.9;
     dryGain = (float)(100 - percentage) / 100 * 0.9;
@@ -260,7 +270,7 @@ void AudioFifoTestAudioProcessor::setDryWet(int percentage)
 int AudioFifoTestAudioProcessor::getDryWet()
 {
     return dryWet;
-}
+}*/
 
 void AudioFifoTestAudioProcessor::setDelaySamples(int delaySamples)
 {
@@ -272,7 +282,7 @@ void AudioFifoTestAudioProcessor::setDelaySamples(int delaySamples)
 
 void AudioFifoTestAudioProcessor::setDelayMs(int ms)
 {
-    setDelaySamples((float)ms * getSampleRate() / 1000);
+    setDelaySamples((double)ms * getSampleRate() / 1000);
 }
 
 void AudioFifoTestAudioProcessor::setDuration(int divider)

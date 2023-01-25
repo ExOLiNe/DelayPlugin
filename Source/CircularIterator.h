@@ -13,7 +13,7 @@
 class CircularIterator
 {
 public:
-    CircularIterator(float* ptr, int size, int pos);
+    CircularIterator(int size, int pos);
     ~CircularIterator();
     void operator+=(int steps);
     void operator=(int numb);
@@ -23,7 +23,6 @@ public:
     int getValue();
 private:
     CircularIterator();
-    float* ptr;
     int size;
     int pos;
 };

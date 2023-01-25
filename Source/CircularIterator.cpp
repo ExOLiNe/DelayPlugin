@@ -11,7 +11,7 @@
 #include "CircularIterator.h"
 #include <cstdlib>
 
-CircularIterator::CircularIterator(float* ptr, int size, int pos) : ptr(ptr), size(size)
+CircularIterator::CircularIterator(int size, int pos) : size(size)
 {
     setPos(pos);
 }
@@ -38,15 +38,7 @@ int CircularIterator::operator-(CircularIterator& another)
 
 void CircularIterator::setPos(int newPos)
 {
-    newPos = newPos % size;
-    if (newPos < 0)
-    {
-        pos = (size + newPos) % size;
-    }
-    else 
-    {
-        pos = newPos % size;
-    }
+    pos = (size + newPos % size) % size;
 }
 
 void CircularIterator::operator=(int numb)

@@ -14,6 +14,8 @@ AudioFifoTestAudioProcessorEditor::AudioFifoTestAudioProcessorEditor (AudioFifoT
     : AudioProcessorEditor (&p), audioProcessor (p)
 {
 
+    dryWetSliderValue = make_unique<AudioProcessorValueTreeState::SliderAttachment>(audioProcessor.treeState, DRY_WET_ID, dryWetSlider);
+
     bpmMappings.push_back(32);
     bpmMappings.push_back(24);
     bpmMappings.push_back(16);
@@ -31,7 +33,7 @@ AudioFifoTestAudioProcessorEditor::AudioFifoTestAudioProcessorEditor (AudioFifoT
     dryWetSlider.setTextValueSuffix(" %");
     dryWetSlider.setRange(0, 100, 1);
     dryWetSlider.addListener(this);
-    dryWetSlider.setValue(audioProcessor.getDryWet());
+    //dryWetSlider.setValue(audioProcessor.getDryWet());
     addAndMakeVisible(dryWetSlider);
 
     delaySlider.setSliderStyle(Slider::SliderStyle::Rotary);
@@ -60,6 +62,7 @@ AudioFifoTestAudioProcessorEditor::AudioFifoTestAudioProcessorEditor (AudioFifoT
     lowpassSlider.setRange(2000.0f, 20000.0f, 1.0f);
     lowpassSlider.setValue(audioProcessor.getLowpassFrequency());
     lowpassSlider.addListener(this);
+    lowpassSlider.setSkewFactor(0.4f);
     addAndMakeVisible(lowpassSlider);
 
     highpassSlider.setSliderStyle(Slider::SliderStyle::Rotary);
@@ -112,7 +115,7 @@ void AudioFifoTestAudioProcessorEditor::sliderValueChanged(Slider* slider)
     }
     else if (slider == &dryWetSlider)
     {
-        audioProcessor.setDryWet(slider->getValue()) ;
+        //audioProcessor.setDryWet(slider->getValue()) ;
     }
     else if (slider == &lowpassSlider)
     {

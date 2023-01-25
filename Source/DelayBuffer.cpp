@@ -18,42 +18,47 @@
 DelayBuffer::DelayBuffer(int maxSampleDelay, int sampleDelay, int voices) :
     bufSize(maxSampleDelay * voices + RESERVED),
     sampleDelay(sampleDelay),
-    buffer(new float[bufSize]),
-    currWritePos(CircularIterator(buffer, bufSize, 0))
+    buffer(vector<float>(bufSize)),
+    currWritePos(CircularIterator(bufSize, 0))
 {
     for (int voice = 0; voice < voices; voice++)
     {
-        readPositions.push_back(CircularIterator(buffer, bufSize, (voice + 1) * sampleDelay));
+        readPositions.push_back(CircularIterator(bufSize, (voice + 1) * sampleDelay));
     }
 }
 
-void DelayBuffer::pushSamples(float* samples, int numSamples)
+DelayBuffer::~DelayBuffer()
+{
+}
+
+void DelayBuffer::pushSamples(const float& samples, int numSamples)
 {
     auto pos = currWritePos.getValue();
     if (pos + numSamples <= bufSize)
     {
-        copy(samples, samples + numSamples, buffer + pos);
+        copy(&samples, &samples + numSamples, buffer.begin() + pos);
     }
     else
     {
+        
         Logger::getCurrentLogger()->writeToLog("buffer push exception");
         auto toEnd = bufSize - pos;
-        copy(samples, samples + toEnd, buffer + pos);
+        copy(&samples, &samples + toEnd, buffer.begin() + pos);
 
-        copy(samples + toEnd, samples + numSamples - toEnd, buffer);
+        copy(&samples + toEnd, &samples + numSamples, buffer.begin());
     }
     currWritePos += numSamples;
 }
 void DelayBuffer::fillSamples(float value, int numSamples)
 {
-    memset(buffer, value, bufSize * sizeof(float));
+    memset(&buffer[0], value, bufSize * sizeof(float));
     currWritePos = numSamples;
 }
 SlicedArray DelayBuffer::readSamples(int numSamples, int voice)
 {
     auto pos = readPositions[voice].getValue();
     readPositions[voice] += numSamples;
-    return SlicedArray(buffer, pos, bufSize);
+    return SlicedArray(buffer[0], pos, bufSize);
 }
 void DelayBuffer::setDelaySamples(int newSampleDelay)
 {

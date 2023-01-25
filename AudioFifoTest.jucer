@@ -23,8 +23,6 @@
             resource="0" file="Source/ChannelMixingWritePointer.cpp"/>
       <FILE id="JAvQhV" name="ChannelMixingWritePointer.h" compile="0" resource="0"
             file="Source/ChannelMixingWritePointer.h"/>
-      <FILE id="x9uWOD" name="Compressor.cpp" compile="1" resource="0" file="Source/Compressor.cpp"/>
-      <FILE id="N3WEee" name="Compressor.h" compile="0" resource="0" file="Source/Compressor.h"/>
     </GROUP>
   </MAINGROUP>
   <JUCEOPTIONS JUCE_STRICT_REFCOUNTEDPOINTER="1" JUCE_VST3_CAN_REPLACE_VST2="0"/>

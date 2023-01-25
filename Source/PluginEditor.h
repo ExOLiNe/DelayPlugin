@@ -47,6 +47,8 @@ private:
     vector<int> bpmMappings;
 
     Slider dryWetSlider;
+    unique_ptr<AudioProcessorValueTreeState::SliderAttachment> dryWetSliderValue;
+
     Slider delaySlider;
     Slider feedbackSlider;
     Slider lowpassSlider;

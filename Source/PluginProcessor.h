@@ -10,7 +10,6 @@
 
 #include <JuceHeader.h>
 #include "DelayBuffer.h"
-#include "Compressor.h"
 
 using namespace std;
 using namespace juce;
@@ -21,6 +20,8 @@ using namespace juce;
 
 using Filter = dsp::IIR::Filter<float>;
 using Chain = dsp::ProcessorChain<Filter, Filter, dsp::Compressor<float>>;
+
+#define DRY_WET_ID "drywet"
 
 enum Mode
 {
@@ -81,8 +82,8 @@ public:
     void getStateInformation (juce::MemoryBlock& destData) override;
     void setStateInformation (const void* data, int sizeInBytes) override;
 
-    void setDryWet(int percentage);
-    int getDryWet();
+    //void setDryWet(int percentage);
+    //int getDryWet();
 
     void setDelayMs(int ms);
     int getDelayMs();
@@ -102,9 +103,11 @@ public:
     void setDuration(int divider);
     void setBpmTied(bool tied);
 
+    AudioProcessorValueTreeState treeState;
+
 private:
     //UI params
-    int dryWet = 90;
+    //int dryWet = 90;
     int delayMs = 200;
     float fadingFactor = 0.8;
     Mode mode;
@@ -112,28 +115,30 @@ private:
     bool tiedToBpm = false;
     //=============================================================================
 
-    int compressionRatio = 2.5;
+    int compressionRatio = 1;
     float compressionThreshold = 0.005;
     float compressionAttack = 10;
     float compressionRelease = 200;
+
     int voices = MAX_VOICES;
     float delaySamples = 0;
-    float dryGain = 0.8;
-    float wetGain = 0.4;
+    //float dryGain = 0.8;
+    //float wetGain = 0.4;
 
     double bpm = 0;
 
     void updateChains();
     void setDelaySamples(int delaySamples);
+    AudioProcessorValueTreeState::ParameterLayout createParameterLayout();
 
     vector<DelayBuffer> delayBuffers;
-    float lowpassFrequency = 1000;
-    float highpassFrequency = 600;
+    int lowpassFrequency = 2000;
+    int highpassFrequency = 600;
     AudioBuffer<float> postProcessBuffer;
     vector<Chain> chains;
 
-
-    AudioProcessorValueTreeState treeState;
+    vector<SlicedArray> voiceIterators;
+    
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (AudioFifoTestAudioProcessor)
 };
