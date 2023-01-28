@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<JUCERPROJECT id="sbwSmc" name="AudioFifoTest" projectType="audioplug" useAppConfig="0"
+<JUCERPROJECT id="sbwSmc" name="Delay" projectType="audioplug" useAppConfig="0"
               addUsingNamespaceToJuceHeader="0" displaySplashScreen="1" jucerFormatVersion="1">
-  <MAINGROUP id="Hss3D6" name="AudioFifoTest">
+  <MAINGROUP id="Hss3D6" name="Delay">
     <GROUP id="{2FCE40FA-DF49-6AD4-4088-2E27F63B914F}" name="Source">
       <FILE id="yc3yG4" name="CircularIterator.cpp" compile="1" resource="0"
             file="Source/CircularIterator.cpp"/>
