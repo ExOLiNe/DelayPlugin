@@ -14,7 +14,5 @@
 
 namespace settings
 {
-    extern juce::String stereoModeID;
-    extern juce::String monoModeID;
-    extern juce::String pingPongModeID;
+    const extern juce::String stereoModeID, monoModeID, pingPongModeID;
 }

@@ -12,7 +12,7 @@
 
 namespace settings
 {
-    juce::String stereoModeID("STEREO_MODE");
-    juce::String monoModeID("MONO_MODE");
-    juce::String pingPongModeID("PINGPONG_MODE");
+    const juce::String stereoModeID("STEREO_MODE");
+    const juce::String monoModeID("MONO_MODE");
+    const juce::String pingPongModeID("PINGPONG_MODE");
 }

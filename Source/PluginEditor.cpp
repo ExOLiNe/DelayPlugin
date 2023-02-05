@@ -8,9 +8,6 @@
 
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
-
-#include "pug.h"
-
 //==============================================================================
 AudioFifoTestAudioProcessorEditor::AudioFifoTestAudioProcessorEditor (AudioFifoTestAudioProcessor& p)
     : AudioProcessorEditor (&p), audioProcessor (p), myLookAndFeel("FuturisExtra Bold Cyrillic@"),
@@ -261,16 +258,19 @@ void AudioFifoTestAudioProcessorEditor::buttonClicked(Button* button)
     {
         monoModeButton.setToggleState(false, juce::NotificationType::dontSendNotification);
         pingPongModeButton.setToggleState(false, juce::NotificationType::dontSendNotification);
+        audioProcessor.setMode(Mode::STEREO);
     }
     else if (id == settings::monoModeID) 
     {
         stereoModeButton.setToggleState(false, juce::NotificationType::dontSendNotification);
         pingPongModeButton.setToggleState(false, juce::NotificationType::dontSendNotification);
+        audioProcessor.setMode(Mode::MONO);
     }
     else if (id == settings::pingPongModeID)
     {
         stereoModeButton.setToggleState(false, juce::NotificationType::dontSendNotification);
         monoModeButton.setToggleState(false, juce::NotificationType::dontSendNotification);
+        audioProcessor.setMode(Mode::PING_PONG);
     }
 }
 
