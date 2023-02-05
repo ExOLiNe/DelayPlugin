@@ -11,14 +11,15 @@
 #include <JuceHeader.h>
 #include "PluginProcessor.h"
 #include "ChannelMixingWritePointer.h"
-
-using namespace juce;
+#include "MyLookAndFeel.h"
+#include "Settings.h"
 
 enum DelayTimeMode
 {
     MS,
     BPM
 };
+
 
 //==============================================================================
 /**
@@ -39,14 +40,18 @@ public:
     void buttonStateChanged(Button*);
     void buttonClicked(Button*);
 private:
-
+    void customizeLookAndFeel(LookAndFeel& lookAndFeel);
+    enum GroupStyle {
+        SOLID, BORDERED
+    };
+    void drawGroup(juce::Graphics&, juce::Rectangle<float> rect, GroupStyle style);
     // This reference is provided as a quick way for your editor to
     // access the processor object that created it.
     AudioFifoTestAudioProcessor& audioProcessor;
 
     vector<int> bpmMappings;
 
-    Slider dryWetSlider;
+    /*Slider dryWetSlider;
     unique_ptr<AudioProcessorValueTreeState::SliderAttachment> dryWetSliderValue;
 
     Slider delaySlider;
@@ -54,7 +59,22 @@ private:
     Slider lowpassSlider;
     Slider highpassSlider;
     ComboBox modeBox;
-    ToggleButton tiedToBpmButton;
+    ToggleButton tiedToBpmButton;*/
+    MyBoxLookAndFeel myLookAndFeel;
+    juce::Label titleLabel, versionLabel, siteLabel, presetsLabel, delayModeLabel;
+    juce::ComboBox presets;
+    juce::TextButton analogButton, stereoModeButton, monoModeButton, pingPongModeButton;
+
+    juce::ImageComponent logo;
+
+    KnobComponent<Style::SIMPLE, int> feedbackKnob, mixKnob, hiPassKnob, lowPassKnob;
+    KnobComponent<Style::LIGHT, int> delayKnob;
+
+    std::unique_ptr<juce::Drawable> background;
+
+    //juce::GroupComponent leftGroup, centerGroup, rightGroup;
+
+    int border = 10;
 
     DelayTimeMode delayTimeMode = DelayTimeMode::MS;
 

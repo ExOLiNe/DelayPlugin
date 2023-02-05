@@ -40,8 +40,6 @@ void DelayBuffer::pushSamples(const float& samples, int numSamples)
     }
     else
     {
-        
-        Logger::getCurrentLogger()->writeToLog("buffer push exception");
         auto toEnd = bufSize - pos;
         copy(&samples, &samples + toEnd, buffer.begin() + pos);
 
