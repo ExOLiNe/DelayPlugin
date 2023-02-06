@@ -12,12 +12,13 @@
 
 #include <JuceHeader.h>
 
-class MyBoxLookAndFeel : public juce::LookAndFeel_V4
+class MyLookAndFeel : public juce::LookAndFeel_V4
 {
 private:
     juce::Font font;
 public:
-    MyBoxLookAndFeel(juce::String faceName);
+    MyLookAndFeel(juce::String faceName);
+    juce::String getFaceName();
     void drawComboBox(juce::Graphics& g, int width, int height, bool,
         int, int, int, int, juce::ComboBox& box) override;
     
@@ -29,4 +30,7 @@ public:
     void drawGroupComponentOutline(juce::Graphics& g, int width, int height,
         const juce::String& text, const juce::Justification& position,
         juce::GroupComponent& group) override;
+
+    void drawRotarySlider(juce::Graphics& g, int x, int y, int width, int height, float sliderPos,
+        const float rotaryStartAngle, const float rotaryEndAngle, juce::Slider& slider) override;
 };

@@ -12,6 +12,7 @@
 #include "PluginProcessor.h"
 #include "ChannelMixingWritePointer.h"
 #include "MyLookAndFeel.h"
+#include "LightKnobLookAndFeel.h"
 #include "Settings.h"
 
 enum DelayTimeMode
@@ -40,7 +41,6 @@ public:
     void buttonStateChanged(Button*);
     void buttonClicked(Button*);
 private:
-    void customizeLookAndFeel(LookAndFeel& lookAndFeel);
     enum GroupStyle {
         SOLID, BORDERED
     };
@@ -60,15 +60,17 @@ private:
     Slider highpassSlider;
     ComboBox modeBox;
     ToggleButton tiedToBpmButton;*/
-    MyBoxLookAndFeel myLookAndFeel;
+    MyLookAndFeel myLookAndFeel;
+    LightKnobLookAndFeel lightKnobLookAndFeel;
     juce::Label titleLabel, versionLabel, siteLabel, presetsLabel, delayModeLabel;
     juce::ComboBox presets;
     juce::TextButton analogButton, stereoModeButton, monoModeButton, pingPongModeButton;
 
     juce::ImageComponent logo;
 
-    KnobComponent<Style::SIMPLE, int> feedbackKnob, mixKnob, hiPassKnob, lowPassKnob;
-    KnobComponent<Style::LIGHT, int> delayKnob;
+    //KnobComponent<Style::SIMPLE, int> feedbackKnob, mixKnob, hiPassKnob, lowPassKnob;
+    //KnobComponent<Style::LIGHT, int> delayKnob;
+    juce::Slider feedbackKnob, mixKnob, hiPassKnob, lowPassKnob, delayKnob;
 
     std::unique_ptr<juce::Drawable> background;
 

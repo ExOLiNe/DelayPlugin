@@ -10,14 +10,14 @@
 #include "PluginEditor.h"
 //==============================================================================
 AudioFifoTestAudioProcessorEditor::AudioFifoTestAudioProcessorEditor (AudioFifoTestAudioProcessor& p)
-    : AudioProcessorEditor (&p), audioProcessor (p), myLookAndFeel("FuturisExtra Bold Cyrillic@"),
+    : AudioProcessorEditor (&p), audioProcessor (p), myLookAndFeel("FuturisExtra Bold Cyrillic@"),/*,
     feedbackKnob("FEEDBACK", "%", 0, 100),
     mixKnob("MIX", "%", 0, 100),
     hiPassKnob("HI", "%", 0, 100),
     lowPassKnob("LOW", "%", 0, 100),
-    delayKnob("DELAY", "ms", 5, 1000)
+    delayKnob("DELAY", "ms", 5, 1000)*/
+    lightKnobLookAndFeel(myLookAndFeel)
 {
-    customizeLookAndFeel(myLookAndFeel);
     LookAndFeel_V4::setDefaultLookAndFeel(&myLookAndFeel);
 
     background = juce::Drawable::createFromSVG(*juce::XmlDocument::parse(BinaryData::background_svg));
@@ -119,6 +119,18 @@ AudioFifoTestAudioProcessorEditor::AudioFifoTestAudioProcessorEditor (AudioFifoT
     delayModeLabel.setFont(juce::Font(20));
     addAndMakeVisible(delayModeLabel);
 
+    feedbackKnob.setSliderStyle(juce::Slider::SliderStyle::RotaryVerticalDrag);
+    feedbackKnob.setTextBoxStyle(juce::Slider::TextEntryBoxPosition::TextBoxBelow, false, 100, 20);
+    mixKnob.setSliderStyle(juce::Slider::SliderStyle::RotaryVerticalDrag);
+    mixKnob.setTextBoxStyle(juce::Slider::TextEntryBoxPosition::TextBoxBelow, false, 100, 20);
+    hiPassKnob.setSliderStyle(juce::Slider::SliderStyle::RotaryVerticalDrag);
+    hiPassKnob.setTextBoxStyle(juce::Slider::TextEntryBoxPosition::TextBoxBelow, false, 100, 20);
+    lowPassKnob.setSliderStyle(juce::Slider::SliderStyle::RotaryVerticalDrag);
+    lowPassKnob.setTextBoxStyle(juce::Slider::TextEntryBoxPosition::TextBoxBelow, false, 100, 20);
+    delayKnob.setSliderStyle(juce::Slider::SliderStyle::RotaryVerticalDrag);
+    delayKnob.setTextBoxStyle(juce::Slider::TextEntryBoxPosition::TextBoxBelow, false, 100, 20);
+    delayKnob.setLookAndFeel(&lightKnobLookAndFeel);
+
     addAndMakeVisible(feedbackKnob);
     addAndMakeVisible(mixKnob);
     addAndMakeVisible(hiPassKnob);
@@ -152,27 +164,8 @@ AudioFifoTestAudioProcessorEditor::AudioFifoTestAudioProcessorEditor (AudioFifoT
     addAndMakeVisible(pingPongModeButton);
 }
 
-void AudioFifoTestAudioProcessorEditor::customizeLookAndFeel(LookAndFeel& lookAndFeel)
-{
-    lookAndFeel.setColour(presets.backgroundColourId, Colour::fromRGB(217, 217, 217));
-    lookAndFeel.setColour(presets.textColourId, Colour::fromRGB(57, 57, 57));
-    lookAndFeel.setColour(presets.outlineColourId, Colour::fromRGB(0, 0, 0));
-    lookAndFeel.setColour(presets.arrowColourId, Colour::fromRGB(57, 57, 57));
-    lookAndFeel.setColour(PopupMenu::highlightedBackgroundColourId, Colour::fromRGB(195, 195, 195));
-    lookAndFeel.setColour(PopupMenu::backgroundColourId, Colour::fromRGB(217, 217, 217));
-    lookAndFeel.setColour(PopupMenu::textColourId, Colour::fromRGB(57, 57, 57));
-    lookAndFeel.setColour(Label::textColourId, Colour::fromRGB(217, 217, 217));
-    lookAndFeel.setColour(juce::TextButton::textColourOffId, Colour::fromRGB(57, 57, 57));
-    lookAndFeel.setColour(juce::TextButton::textColourOnId, Colour::fromRGB(57, 57, 57));
-    lookAndFeel.setColour(juce::TextButton::buttonColourId, Colour::fromRGB(217, 217, 217));
-    lookAndFeel.setColour(juce::TextButton::buttonOnColourId, Colour::fromRGB(255, 239, 99));
-}
-
 AudioFifoTestAudioProcessorEditor::~AudioFifoTestAudioProcessorEditor()
 {
-    /*presetsLabel.setLookAndFeel(nullptr);
-    presets.setLookAndFeel(nullptr);
-    setLookAndFeel(nullptr);*/
 }
 
 void AudioFifoTestAudioProcessorEditor::comboBoxChanged(ComboBox* comboBoxThatHasChanged)
